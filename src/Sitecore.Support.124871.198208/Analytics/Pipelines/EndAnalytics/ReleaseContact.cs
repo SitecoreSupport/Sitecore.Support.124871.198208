@@ -7,6 +7,7 @@
   using Extensions;
   using Microsoft.Extensions.DependencyInjection;
   using Sitecore.Analytics;
+  using Sitecore.Analytics.Exceptions;
   using Sitecore.Analytics.Tracking;
   using Sitecore.Pipelines;
 
@@ -31,52 +32,64 @@
 
     public void Process(PipelineArgs args)
     {
-      if (Tracker.Current == null)
+      #region Fix 124871 Wrapped into try-catch syntax
+
+      try
+
+        #endregion
+
       {
-        _log.Debug("Tracker is not initialized. ReleaseContact processor is skipped");
-        return;
+        if (Tracker.Current == null)
+        {
+          _log.Debug("Tracker is not initialized. ReleaseContact processor is skipped");
+          return;
+        }
+
+        var session = Tracker.Current.Session;
+        Assert.IsNotNull(session, "Tracker.Current.Session");
+
+        var transferInProgress =
+          (bool) session.GetType()
+            .GetProperty("TransferInProcess", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.GetProperty)
+            .GetValue(session);
+
+        if (transferInProgress)
+        {
+          _log.Debug("Contact is being transferred. ReleaseContact processor is skipped");
+          return;
+        }
+
+        if (session.Contact == null)
+        {
+          _log.Debug("Contact is null. ReleaseContact processor is skipped");
+          return;
+        }
+
+        if (session.Settings.IsTransient)
+        {
+          _log.Debug("Session is in TRANSIENT MODE. ReleaseContact processor is skipped");
+          return;
+        }
+
+        if (session.IsReadOnly)
+          return;
+
+        var manager = _factory.CreateObject("tracking/contactManager", true) as ContactManager;
+        Assert.IsNotNull(manager, "tracking/contactManager");
+
+        #region Fix 198208
+
+        session = session.GetOriginalSession() ?? session;
+
+        #endregion
+
+        manager.SaveAndReleaseContact(session.Contact);
+        session.Contact = null;
       }
-
-      var session = Tracker.Current.Session;
-      Assert.IsNotNull(session, "Tracker.Current.Session");
-
-      var transferInProgress =
-        (bool) session.GetType()
-          .GetProperty("TransferInProcess", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.GetProperty)
-          .GetValue(session);
-
-      if (transferInProgress)
+      catch (ContactLockException exception)
       {
-        _log.Debug("Contact is being transferred. ReleaseContact processor is skipped");
-        return;
+        Log.Error("Contact cannot be locked.", exception, this);
       }
-
-      if (session.Contact == null)
-      {
-        _log.Debug("Contact is null. ReleaseContact processor is skipped");
-        return;
-      }
-
-      if (session.Settings.IsTransient)
-      {
-        _log.Debug("Session is in TRANSIENT MODE. ReleaseContact processor is skipped");
-        return;
-      }
-
-      if (session.IsReadOnly)
-        return;
-
-      var manager = _factory.CreateObject("tracking/contactManager", true) as ContactManager;
-      Assert.IsNotNull(manager, "tracking/contactManager");
-
-      #region Fix
-
-      session = session.GetOriginalSession() ?? session;
-
-      #endregion
-
-      manager.SaveAndReleaseContact(session.Contact);
-      session.Contact = null;
     }
   }
 }
