@@ -4,6 +4,7 @@
   using Abstractions;
   using DependencyInjection;
   using Diagnostics;
+  using Extensions;
   using Microsoft.Extensions.DependencyInjection;
   using Sitecore.Analytics;
   using Sitecore.Analytics.Tracking;
@@ -67,6 +68,13 @@
 
       var manager = _factory.CreateObject("tracking/contactManager", true) as ContactManager;
       Assert.IsNotNull(manager, "tracking/contactManager");
+
+      #region Fix
+
+      session = session.GetOriginalSession() ?? session;
+
+      #endregion
+
       manager.SaveAndReleaseContact(session.Contact);
       session.Contact = null;
     }
