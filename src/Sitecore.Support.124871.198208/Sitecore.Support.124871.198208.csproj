@@ -49,6 +49,10 @@
       <HintPath>..\packages\SC.Sitecore.Analytics.8.2.5\lib\Sitecore.Analytics.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Sitecore.Analytics.DataAccess, Version=10.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\SC.Sitecore.Analytics.DataAccess.8.2.5\lib\Sitecore.Analytics.DataAccess.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="Sitecore.Kernel">
       <HintPath>..\packages\SC.Sitecore.Kernel.8.2.5\lib\Sitecore.Kernel.dll</HintPath>
       <Private>False</Private>
@@ -71,6 +75,7 @@
     <Compile Include="Analytics\Extensions\SessionExtensions.cs" />
     <Compile Include="Analytics\Pipelines\EndAnalytics\ReleaseContact.cs" />
     <Compile Include="Analytics\Pipelines\EnsureSessionContext\SetDummySession.cs" />
+    <Compile Include="Analytics\Pipelines\SubmitSessionContext\SaveVisit.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
