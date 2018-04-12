@@ -1,11 +1,9 @@
 ﻿namespace Sitecore.Support.Analytics.Pipelines.EndAnalytics
 {
   using System.Reflection;
-  using Abstractions;
-  using DependencyInjection;
   using Diagnostics;
   using Extensions;
-  using Microsoft.Extensions.DependencyInjection;
+  using Configuration;
   using Sitecore.Analytics;
   using Sitecore.Analytics.Exceptions;
   using Sitecore.Analytics.Tracking;
@@ -13,23 +11,6 @@
 
   public class ReleaseContact
   {
-    private readonly BaseFactory _factory;
-
-    private readonly BaseLog _log;
-
-    public ReleaseContact() : this(ServiceLocator.ServiceProvider.GetRequiredService<BaseFactory>(),
-      ServiceLocator.ServiceProvider.GetRequiredService<BaseLog>())
-    {
-    }
-
-    internal ReleaseContact(BaseFactory factory, BaseLog log)
-    {
-      Assert.ArgumentNotNull(factory, "factory");
-      Assert.ArgumentNotNull(log, "log");
-      _factory = factory;
-      _log = log;
-    }
-
     public void Process(PipelineArgs args)
     {
       #region Fix 124871 Wrapped into try-catch syntax
@@ -41,7 +22,7 @@
       {
         if (Tracker.Current == null)
         {
-          _log.Debug("Tracker is not initialized. ReleaseContact processor is skipped");
+          Log.Debug("Tracker is not initialized. ReleaseContact processor is skipped");
           return;
         }
 
@@ -55,26 +36,26 @@
 
         if (transferInProgress)
         {
-          _log.Debug("Contact is being transferred. ReleaseContact processor is skipped");
+          Log.Debug("Contact is being transferred. ReleaseContact processor is skipped");
           return;
         }
 
         if (session.Contact == null)
         {
-          _log.Debug("Contact is null. ReleaseContact processor is skipped");
+          Log.Debug("Contact is null. ReleaseContact processor is skipped");
           return;
         }
 
         if (session.Settings.IsTransient)
         {
-          _log.Debug("Session is in TRANSIENT MODE. ReleaseContact processor is skipped");
+          Log.Debug("Session is in TRANSIENT MODE. ReleaseContact processor is skipped");
           return;
         }
 
         if (session.IsReadOnly)
           return;
 
-        var manager = _factory.CreateObject("tracking/contactManager", true) as ContactManager;
+        var manager = Factory.CreateObject("tracking/contactManager", true) as ContactManager;
         Assert.IsNotNull(manager, "tracking/contactManager");
 
         #region Fix 198208
